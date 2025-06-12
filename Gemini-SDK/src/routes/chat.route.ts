@@ -12,6 +12,13 @@ export async function handleChatRequest(req: Request): Promise<Response> {
       const url = new URL(req.url);
       const pathname = url.pathname;
       
+      // 添加调试日志
+      console.log('=== 请求调试信息 ===');
+      console.log('URL:', req.url);
+      console.log('路径:', pathname);
+      console.log('查询参数:', Object.fromEntries(url.searchParams));
+      console.log('请求头:', Object.fromEntries(req.headers));
+      
       // 检查是否是Google AI API格式的请求
       const isGoogleAPIFormat = pathname.includes("/v1beta/models/");
       
@@ -61,7 +68,14 @@ export async function handleChatRequest(req: Request): Promise<Response> {
         userContentParts = await parseFormDataToContents(formData, messageText, apikey || '');
       }
 
+      // 添加调试日志显示解析结果
+      console.log('解析结果:');
+      console.log('模型:', model);
+      console.log('API密钥:', apikey ? `${apikey.substring(0, 10)}...` : 'undefined');
+      console.log('是否Google API格式:', isGoogleAPIFormat);
+
       if (!model || !apikey) {
+        console.log('错误: 缺少模型或API密钥');
         return new Response("请求体中缺少模型或API密钥", { status: 400 });
       }
       
