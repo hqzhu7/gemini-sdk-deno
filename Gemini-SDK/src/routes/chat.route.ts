@@ -133,8 +133,21 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                     try {
                       const partsInChunk: Part[] = JSON.parse(line);
                       if (isSSE) {
-                        // SSE格式：data: {json}\n\n
-                        const sseData = `data: ${line}\n\n`;
+                        // SSE格式：包装为OpenAI兼容格式
+                        const openAIFormat = {
+                          id: `chatcmpl-${Date.now()}`,
+                          object: "chat.completion.chunk",
+                          created: Math.floor(Date.now() / 1000),
+                          model: "gemini",
+                          choices: [{
+                            index: 0,
+                            delta: {
+                              content: partsInChunk.map(part => part.text || '').join('')
+                            },
+                            finish_reason: null
+                          }]
+                        };
+                        const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
                         controller.enqueue(encoder.encode(sseData));
                       } else {
                         // NDJSON格式
@@ -150,7 +163,21 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                 try {
                   const partsInChunk: Part[] = JSON.parse(buffer);
                   if (isSSE) {
-                    const sseData = `data: ${buffer}\n\n`;
+                    // SSE格式：包装为OpenAI兼容格式
+                    const openAIFormat = {
+                      id: `chatcmpl-${Date.now()}`,
+                      object: "chat.completion.chunk",
+                      created: Math.floor(Date.now() / 1000),
+                      model: "gemini",
+                      choices: [{
+                        index: 0,
+                        delta: {
+                          content: partsInChunk.map(part => part.text || '').join('')
+                        },
+                        finish_reason: null
+                      }]
+                    };
+                    const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
                     controller.enqueue(encoder.encode(sseData));
                   } else {
                     controller.enqueue(encoder.encode(buffer + '\n'));
@@ -162,6 +189,18 @@ export async function handleChatRequest(req: Request): Promise<Response> {
               
               // SSE格式需要发送结束标记
               if (isSSE) {
+                const finalChunk = {
+                  id: `chatcmpl-${Date.now()}`,
+                  object: "chat.completion.chunk",
+                  created: Math.floor(Date.now() / 1000),
+                  model: "gemini",
+                  choices: [{
+                    index: 0,
+                    delta: {},
+                    finish_reason: "stop"
+                  }]
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
                 controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               }
             } catch (error) {
