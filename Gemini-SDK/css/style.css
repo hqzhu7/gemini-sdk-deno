@@ -1,0 +1,39 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff; /* 调整为白色，与左侧栏背景色互换 */
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+
+#main-content {
+    display: flex;
+    flex: 1; /* 让 main-content 占据 #app 中除了 top-area 以外的所有空间 */
+    gap: 10px;
+    overflow: hidden;
+    justify-content: flex-start;
+    min-width: 0; /* 确保flex子项可以正确缩小 */
+}
+
+/* 移除了对 #left-sidebar 的重复 flex-shrink: 0 和 transition 声明，
+   这些已移至 left-sidebar.css，以保持样式文件的独立性 */
+/*
+#left-sidebar {
+    transition: transform 0.3s ease, width 0.3s ease;
+    width: 300px;
+    flex-shrink: 0;
+}
+
+#left-sidebar.collapsed {
+    transform: translateX(-300px);
+    width: 0;
+    visibility: hidden;
+    margin-right: 0;
+}
+*/

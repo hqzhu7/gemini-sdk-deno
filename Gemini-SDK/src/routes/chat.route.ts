@@ -1,0 +1,122 @@
+// src/routes/chat.route.ts
+
+import { processAIRequest, parseFormDataToContents } from "../services/ai.service.ts";
+import { Content, Part } from "npm:@google/genai";
+
+const decoder = new TextDecoder();
+
+export async function handleChatRequest(req: Request): Promise<Response> {
+
+  if (req.method === "POST") {
+    try {
+      const formData = await req.formData();
+      const model = formData.get('model')?.toString();
+      const apikey = formData.get('apikey')?.toString();
+      const messageText = formData.get('input')?.toString() || '';
+      const streamEnabled = formData.get('stream') === 'true';
+
+      if (!model || !apikey) {
+        return new Response("请求体中缺少模型或API密钥", { status: 400 });
+      }
+
+      const userContentParts: Part[] = await parseFormDataToContents(formData, messageText, apikey);
+      
+      if (userContentParts.length === 0) {
+        if (!messageText.trim() && !Array.from(formData.values()).some(v => v instanceof File)) {
+             return new Response("请输入消息或上传文件。", { status: 400 });
+        }
+      }
+
+      // 直接使用当前用户消息，不保存历史记录
+      const fullAiContents: Content[] = [{
+        role: "user",
+        parts: userContentParts
+      }];
+
+      let mimeTypesForOtherModels: string[] = []; 
+      if (model !== 'gemini-2.0-flash-preview-image-generation') {
+        // 如果有其他模型需要特定MIME类型，可以在这里设置
+        console.log(`模型 ${model} 使用默认响应类型或由 processAIRequest 内部的 _requestedResponseMimeTypes (如果提供) 决定。`);
+      } else {
+        // 对于图像生成模型，processAIRequest 内部会处理其特殊的 config.responseModalities
+        console.log(`为图像生成模型 ${model} 调用 processAIRequest，不在此处传递特定MIME类型列表。`);
+      }
+
+      if (!apikey) {
+        return new Response("API Key is missing for AI service call.", { status: 400 });
+      }
+      
+      const aiResponse = await processAIRequest(
+        model,
+        apikey,
+        fullAiContents,
+        streamEnabled,
+        mimeTypesForOtherModels // 这个参数对于图像生成模型会被 processAIRequest 内部逻辑覆盖或忽略
+      );
+      
+      // ... (后续的流式和非流式响应处理逻辑保持不变) ...
+       if (streamEnabled) {
+        const encoder = new TextEncoder();
+        const responseBody = new ReadableStream({
+          async start(controller) {
+            const reader = (aiResponse as ReadableStream<Uint8Array>).getReader();
+            let buffer = '';
+            try {
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                  if (line.trim()) {
+                    try {
+                      const partsInChunk: Part[] = JSON.parse(line);
+                      controller.enqueue(encoder.encode(line + '\n'));
+                    } catch (e) {
+                      console.error('解析AI流式响应JSON块时出错:', e, '原始行:', line);
+                    }
+                  }
+                }
+              }
+              if (buffer.trim()) {
+                try {
+                  const partsInChunk: Part[] = JSON.parse(buffer);
+                  controller.enqueue(encoder.encode(buffer + '\n'));
+                } catch (e) {
+                  console.error('解析AI流式响应最终缓冲时出错:', e, '原始缓冲:', buffer);
+                }
+              }
+            } catch (error) {
+              console.error("AI流式响应处理过程中发生错误:", error);
+              controller.error(error);
+            } finally {
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(responseBody, {
+          headers: {
+            'Content-Type': 'application/x-ndjson',
+            'Transfer-Encoding': 'chunked',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          }
+        });
+
+      } else { // 非流式
+        const aiMessageParts = aiResponse as Part[];
+        return new Response(JSON.stringify({ response: aiMessageParts }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+    } catch (error) {
+      console.error("处理聊天请求时发生错误:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return new Response(`处理聊天消息时出错: ${errorMessage}`, { status: 500 });
+    }
+  }
+  return new Response("未找到或方法不允许", { status: 404 });
+}

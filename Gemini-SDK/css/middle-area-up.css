@@ -1,0 +1,311 @@
+/* middle-area-up.css */
+/* 上部聊天显示区域样式 */
+
+#chat-display {
+    align-items: flex-start;
+    flex-basis: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    scroll-behavior: smooth;
+}
+    
+/* 所有消息的通用样式 */
+.message {
+    max-width: 70%; /* 消息最大宽度 */
+    padding: 4px 12px; /* 减小上下内边距 */
+    border-radius: 18px;
+    font-size: 0.95em;
+    line-height: 1.1; /* 减小行高 */
+    word-wrap: break-word; /* 单词过长时换行 */
+    white-space: pre-wrap; /* 保留空白和换行 */
+    margin-top: 4px;
+    margin-bottom: 4px;
+    overflow-wrap: break-word;
+}
+
+/* 用户消息样式 (右对齐，绿色背景) */
+.message.user {
+    background-color: var(--user-message-color, #dcf8c6);
+    color: var(--user-message-text-color, #333);
+    align-self: flex-end;
+    margin-left: auto;
+    text-align: left;
+}
+
+/* AI 消息样式 (左对齐，灰色背景) */
+.message.ai {
+    background-color: #f5f5f5 !important; /* 浅灰色背景，使用 !important 确保覆盖 */
+    color: var(--ai-message-text-color, #333);
+    align-self: flex-start;
+    margin-right: auto;
+    text-align: left;
+    margin-bottom: 8px !important; /* 增加消息之间的间距 */
+    padding: 10px;
+}
+
+/* 聊天气泡外下方的文件预览容器样式 (用户消息的文件预览) */
+.message-file-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+    clear: both; /* 清除浮动 */
+    max-width: 70%; /* 确保与消息宽度一致 */
+    align-self: flex-end; /* 用户文件的预览也靠右对齐 */
+}
+
+.message-preview-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: 80px; /* 固定宽度 */
+    height: 100px; /* 固定高度，包含文字 */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 5px;
+    background-color: #f9f9f9;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    overflow: hidden; /* 防止内容溢出 */
+}
+
+.message-preview-item img {
+    max-width: 100%;
+    max-height: 80%; /* 留出空间给文件名 */
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.message-file-name {
+    font-size: 11px;
+    color: #555;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal; /* 允许文件名换行 */
+    word-wrap: break-word; /* 强制长文件名换行 */
+    line-height: 1.2;
+    flex-grow: 1; /* 占据剩余空间 */
+}
+
+/* AI生成图片的样式，如果图片是AI消息的一部分 */
+.ai-message img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 10px; /* 如果文本和图片都在一个AI消息气泡内 */
+    display: block; /* 确保图片独占一行 */
+}
+
+/* 加载动画 */
+.loading-animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px; /* 动画容器大小 */
+    height: 40px;
+    background-color: #f5f5f5; /* 使用相同的浅灰色背景 */
+    border-radius: 18px;
+    padding: 5px 10px;
+    margin-right: auto; /* 左对齐 */
+}
+
+.dot-pulse {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--dot-color, #999);
+  color: var(--dot-color, #999);
+  animation: dotPulse 1.5s infinite ease-in-out;
+  animation-delay: -0.24s;
+}
+
+.dot-pulse::before, .dot-pulse::after {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--dot-color, #999);
+  color: var(--dot-color, #999);
+  animation: dotPulse 1.5s infinite ease-in-out;
+}
+
+.dot-pulse::before {
+  left: -15px;
+  animation-delay: -0.48s;
+}
+
+.dot-pulse::after {
+  left: 15px;
+  animation-delay: 0s;
+}
+
+@keyframes dotPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+}
+
+/* Markdown 样式 */
+
+/* 覆盖消息内容中p标签的默认样式 */
+.message p {
+    margin: 0 0 4px 0 !important;  /* 只保留底部间距 */
+    padding: 0 !important; /* 移除所有内边距 */
+    min-height: 0 !important; /* 确保不会有最小高度限制 */
+}
+
+/* 最后一个段落不需要底部间距 */
+.message p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.message pre {
+    background-color: #f3f3f3;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85em;
+    margin-top: 10px;
+    border: 1px solid #eee;
+}
+
+.message code {
+    background-color: #f3f3f3;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+/* 对于可能比 pre 更大的内联代码 */
+.message p code {
+    white-space: pre-wrap; /* 允许内联代码换行 */
+    word-break: break-all; /* 必要时在任意字符处断开 */
+}
+
+/* 列表 */
+.message ul, .message ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.message ul li, .message ol li {
+    margin-bottom: 5px;
+}
+
+/* 标题 */
+.message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
+    font-weight: bold;
+}
+.message h1 { font-size: 1.3em; }
+.message h2 { font-size: 1.2em; }
+.message h3 { font-size: 1.1em; }
+
+/* 引用块 */
+.message blockquote {
+    border-left: 4px solid #ccc;
+    padding-left: 10px;
+    color: #666;
+    margin: 10px 0;
+}
+
+/* 分隔线 */
+.message hr {
+    border: 0;
+    height: 1px;
+    background: #eee;
+    margin: 20px 0;
+}
+
+/* 链接 */
+.message a {
+    color: #007bff;
+    text-decoration: none;
+}
+.message a:hover {
+    text-decoration: underline;
+}
+
+/* 表格样式 */
+.message table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+.message th, .message td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+.message th {
+    background-color: #f2f2f2;
+}
+
+/* 暗色模式变量 (可选，如果你有暗色模式切换) */
+body.dark-mode {
+    --chat-background-color: #2c2c2c;
+    --user-message-color: #0056b3; /* 用户消息更深的蓝色 */
+    --user-message-text-color: #f0f0f0;
+    --ai-message-color: #3a3a3a; /* AI 消息更深的灰色 */
+    --ai-message-text-color: #f0f0f0;
+    --dot-color: #bbb;
+}
+
+/* 新增：用于显示历史记录中非图片文件的样式 */
+.message-displayed-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: #f0f0f0; /* 浅灰色背景 */
+    border-radius: 8px;
+    margin-top: 5px;
+    max-width: 100%;
+    word-break: break-all; /* 确保长文件名换行 */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.message-displayed-file .file-icon {
+    flex-shrink: 0; /* 防止SVG被压缩 */
+    color: #6c757d; /* 图标颜色 */
+}
+
+.message-displayed-file a {
+    color: #007bff; /* 链接颜色 */
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: bold;
+    word-break: break-all; /* 确保链接文本换行 */
+}
+
+.message-displayed-file a:hover {
+    text-decoration: underline;
+}
+
+
