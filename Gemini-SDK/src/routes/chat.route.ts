@@ -201,7 +201,6 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                   }]
                 };
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
-                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               }
             } catch (error) {
               console.error("AI流式响应处理过程中发生错误:", error);
