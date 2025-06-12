@@ -114,6 +114,9 @@ export async function handleChatRequest(req: Request): Promise<Response> {
       // ... (后续的流式和非流式响应处理逻辑保持不变) ...
        if (streamEnabled) {
         const encoder = new TextEncoder();
+        const url = new URL(req.url);
+        const isSSE = url.searchParams.get('alt') === 'sse';
+        
         const responseBody = new ReadableStream({
           async start(controller) {
             const reader = (aiResponse as ReadableStream<Uint8Array>).getReader();
@@ -129,7 +132,14 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                   if (line.trim()) {
                     try {
                       const partsInChunk: Part[] = JSON.parse(line);
-                      controller.enqueue(encoder.encode(line + '\n'));
+                      if (isSSE) {
+                        // SSE格式：data: {json}\n\n
+                        const sseData = `data: ${line}\n\n`;
+                        controller.enqueue(encoder.encode(sseData));
+                      } else {
+                        // NDJSON格式
+                        controller.enqueue(encoder.encode(line + '\n'));
+                      }
                     } catch (e) {
                       console.error('解析AI流式响应JSON块时出错:', e, '原始行:', line);
                     }
@@ -139,10 +149,20 @@ export async function handleChatRequest(req: Request): Promise<Response> {
               if (buffer.trim()) {
                 try {
                   const partsInChunk: Part[] = JSON.parse(buffer);
-                  controller.enqueue(encoder.encode(buffer + '\n'));
+                  if (isSSE) {
+                    const sseData = `data: ${buffer}\n\n`;
+                    controller.enqueue(encoder.encode(sseData));
+                  } else {
+                    controller.enqueue(encoder.encode(buffer + '\n'));
+                  }
                 } catch (e) {
                   console.error('解析AI流式响应最终缓冲时出错:', e, '原始缓冲:', buffer);
                 }
+              }
+              
+              // SSE格式需要发送结束标记
+              if (isSSE) {
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               }
             } catch (error) {
               console.error("AI流式响应处理过程中发生错误:", error);
@@ -155,7 +175,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
 
         return new Response(responseBody, {
           headers: {
-            'Content-Type': 'application/x-ndjson',
+            'Content-Type': isSSE ? 'text/event-stream' : 'application/x-ndjson',
             'Transfer-Encoding': 'chunked',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
