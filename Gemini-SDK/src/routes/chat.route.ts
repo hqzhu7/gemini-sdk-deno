@@ -40,7 +40,8 @@ export async function handleChatRequest(req: Request): Promise<Response> {
         // 从查询参数或头部获取API密钥
         apikey = url.searchParams.get('key') || 
                  req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || 
-                 req.headers.get('x-api-key');
+                 req.headers.get('x-api-key') ||
+                 req.headers.get('x-goog-api-key');
         
         // 检查是否是流式请求
         streamEnabled = pathname.includes(':streamGenerateContent');
