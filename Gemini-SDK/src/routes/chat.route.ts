@@ -6,6 +6,18 @@ import { Content, Part } from "npm:@google/genai";
 const decoder = new TextDecoder();
 
 export async function handleChatRequest(req: Request): Promise<Response> {
+  // 处理CORS预检请求
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Goog-API-Key',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
+  }
 
   if (req.method === "POST") {
     try {
@@ -224,17 +236,26 @@ export async function handleChatRequest(req: Request): Promise<Response> {
 
         return new Response(responseBody, {
           headers: {
-            'Content-Type': isSSE ? 'text/event-stream' : 'application/x-ndjson',
+            'Content-Type': isSSE ? 'text/event-stream; charset=utf-8' : 'application/x-ndjson',
             'Transfer-Encoding': 'chunked',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Goog-API-Key',
+            'Access-Control-Expose-Headers': 'Content-Type',
           }
         });
 
       } else { // 非流式
         const aiMessageParts = aiResponse as Part[];
         return new Response(JSON.stringify({ response: aiMessageParts }), {
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Goog-API-Key',
+          },
         });
       }
 
