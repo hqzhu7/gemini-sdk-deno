@@ -148,6 +148,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                           }]
                         };
                         const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
+                        console.log('发送SSE数据块:', JSON.stringify(openAIFormat, null, 2));
                         controller.enqueue(encoder.encode(sseData));
                       } else {
                         // NDJSON格式
@@ -178,6 +179,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                       }]
                     };
                     const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
+                    console.log('发送SSE最终缓冲数据块:', JSON.stringify(openAIFormat, null, 2));
                     controller.enqueue(encoder.encode(sseData));
                   } else {
                     controller.enqueue(encoder.encode(buffer + '\n'));
@@ -200,6 +202,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                     finish_reason: "stop"
                   }]
                 };
+                console.log('发送SSE结束标记:', JSON.stringify(finalChunk, null, 2));
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
               }
             } catch (error) {
