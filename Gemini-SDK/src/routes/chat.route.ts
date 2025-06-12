@@ -134,22 +134,26 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                       const partsInChunk: Part[] = JSON.parse(line);
                       if (isSSE) {
                         // SSE格式：包装为OpenAI兼容格式
-                        const openAIFormat = {
-                          id: `chatcmpl-${Date.now()}`,
-                          object: "chat.completion.chunk",
-                          created: Math.floor(Date.now() / 1000),
-                          model: "gemini",
-                          choices: [{
-                            index: 0,
-                            delta: {
-                              content: partsInChunk.map(part => part.text || '').join('')
-                            },
-                            finish_reason: null
-                          }]
-                        };
-                        const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
-                        console.log('发送SSE数据块:', JSON.stringify(openAIFormat, null, 2));
-                        controller.enqueue(encoder.encode(sseData));
+                        const content = partsInChunk.map(part => part.text || '').join('');
+                        if (content) {
+                          const openAIFormat = {
+                            id: `chatcmpl-${Date.now()}`,
+                            object: "chat.completion.chunk",
+                            created: Math.floor(Date.now() / 1000),
+                            model: model,
+                            choices: [{
+                              index: 0,
+                              delta: {
+                                role: "assistant",
+                                content: content
+                              },
+                              finish_reason: null
+                            }]
+                          };
+                          const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
+                          console.log('发送SSE数据块:', JSON.stringify(openAIFormat, null, 2));
+                          controller.enqueue(encoder.encode(sseData));
+                        }
                       } else {
                         // NDJSON格式
                         controller.enqueue(encoder.encode(line + '\n'));
@@ -165,22 +169,26 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                   const partsInChunk: Part[] = JSON.parse(buffer);
                   if (isSSE) {
                     // SSE格式：包装为OpenAI兼容格式
-                    const openAIFormat = {
-                      id: `chatcmpl-${Date.now()}`,
-                      object: "chat.completion.chunk",
-                      created: Math.floor(Date.now() / 1000),
-                      model: "gemini",
-                      choices: [{
-                        index: 0,
-                        delta: {
-                          content: partsInChunk.map(part => part.text || '').join('')
-                        },
-                        finish_reason: null
-                      }]
-                    };
-                    const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
-                    console.log('发送SSE最终缓冲数据块:', JSON.stringify(openAIFormat, null, 2));
-                    controller.enqueue(encoder.encode(sseData));
+                    const content = partsInChunk.map(part => part.text || '').join('');
+                    if (content) {
+                      const openAIFormat = {
+                        id: `chatcmpl-${Date.now()}`,
+                        object: "chat.completion.chunk",
+                        created: Math.floor(Date.now() / 1000),
+                        model: model,
+                        choices: [{
+                          index: 0,
+                          delta: {
+                            role: "assistant",
+                            content: content
+                          },
+                          finish_reason: null
+                        }]
+                      };
+                      const sseData = `data: ${JSON.stringify(openAIFormat)}\n\n`;
+                      console.log('发送SSE最终缓冲数据块:', JSON.stringify(openAIFormat, null, 2));
+                      controller.enqueue(encoder.encode(sseData));
+                    }
                   } else {
                     controller.enqueue(encoder.encode(buffer + '\n'));
                   }
@@ -195,7 +203,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
                   id: `chatcmpl-${Date.now()}`,
                   object: "chat.completion.chunk",
                   created: Math.floor(Date.now() / 1000),
-                  model: "gemini",
+                  model: model,
                   choices: [{
                     index: 0,
                     delta: {},
