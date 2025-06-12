@@ -29,8 +29,11 @@ export async function handleChatRequest(req: Request): Promise<Response> {
         const modelMatch = pathname.match(/\/v1beta\/models\/([^:]+)/);
         model = modelMatch ? modelMatch[1] : undefined;
         
+
         // 从查询参数或头部获取API密钥
-        apikey = url.searchParams.get('key') || req.headers.get('authorization')?.replace('Bearer ', '');
+        apikey = url.searchParams.get('key') || 
+                 req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || 
+                 req.headers.get('x-api-key');
         
         // 检查是否是流式请求
         streamEnabled = pathname.includes(':streamGenerateContent');
@@ -83,9 +86,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
         console.log(`为图像生成模型 ${model} 调用 processAIRequest，不在此处传递特定MIME类型列表。`);
       }
 
-      if (!apikey) {
-        return new Response("API Key is missing for AI service call.", { status: 400 });
-      }
+
       
       const aiResponse = await processAIRequest(
         model,
