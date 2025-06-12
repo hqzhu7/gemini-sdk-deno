@@ -9,20 +9,61 @@ export async function handleChatRequest(req: Request): Promise<Response> {
 
   if (req.method === "POST") {
     try {
-      const formData = await req.formData();
-      const model = formData.get('model')?.toString();
-      const apikey = formData.get('apikey')?.toString();
-      const messageText = formData.get('input')?.toString() || '';
-      const streamEnabled = formData.get('stream') === 'true';
+      const url = new URL(req.url);
+      const pathname = url.pathname;
+      
+      // 检查是否是Google AI API格式的请求
+      const isGoogleAPIFormat = pathname.includes("/v1beta/models/");
+      
+      let model: string | undefined;
+      let apikey: string | undefined;
+      let messageText = '';
+      let streamEnabled = false;
+      let userContentParts: Part[] = [];
+      
+      if (isGoogleAPIFormat) {
+        // 处理Google AI API格式的JSON请求
+        const jsonBody = await req.json();
+        
+        // 从URL路径中提取模型名称
+        const modelMatch = pathname.match(/\/v1beta\/models\/([^:]+)/);
+        model = modelMatch ? modelMatch[1] : undefined;
+        
+        // 从查询参数或头部获取API密钥
+        apikey = url.searchParams.get('key') || req.headers.get('authorization')?.replace('Bearer ', '');
+        
+        // 检查是否是流式请求
+        streamEnabled = pathname.includes(':streamGenerateContent');
+        
+        // 解析Google AI API格式的内容
+        if (jsonBody.contents && Array.isArray(jsonBody.contents)) {
+          const lastContent = jsonBody.contents[jsonBody.contents.length - 1];
+          if (lastContent && lastContent.parts) {
+            userContentParts = lastContent.parts;
+            // 提取文本内容用于日志
+            const textPart = lastContent.parts.find((part: any) => part.text);
+            if (textPart) {
+              messageText = textPart.text;
+            }
+          }
+        }
+      } else {
+        // 处理原有的FormData格式请求
+        const formData = await req.formData();
+        model = formData.get('model')?.toString();
+        apikey = formData.get('apikey')?.toString();
+        messageText = formData.get('input')?.toString() || '';
+        streamEnabled = formData.get('stream') === 'true';
+        
+        userContentParts = await parseFormDataToContents(formData, messageText, apikey || '');
+      }
 
       if (!model || !apikey) {
         return new Response("请求体中缺少模型或API密钥", { status: 400 });
       }
-
-      const userContentParts: Part[] = await parseFormDataToContents(formData, messageText, apikey);
       
       if (userContentParts.length === 0) {
-        if (!messageText.trim() && !Array.from(formData.values()).some(v => v instanceof File)) {
+        if (!messageText.trim()) {
              return new Response("请输入消息或上传文件。", { status: 400 });
         }
       }
