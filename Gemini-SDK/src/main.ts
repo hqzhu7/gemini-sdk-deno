@@ -26,6 +26,15 @@ serve(async (req) => {
     return handleChatRequest(req); // Call handleChatRequest without aiService parameter
   }
 
+  // 处理Google AI API格式的请求 (兼容Cherry Studio等客户端)
+  if (pathname.includes("/v1beta/models/") && pathname.includes(":streamGenerateContent")) {
+    return handleChatRequest(req);
+  }
+  
+  if (pathname.includes("/v1beta/models/") && pathname.includes(":generateContent")) {
+    return handleChatRequest(req);
+  }
+
   // 处理静态文件请求
   try {
     const filename = pathname === '/' ? 'index.html' : pathname.substring(1);
