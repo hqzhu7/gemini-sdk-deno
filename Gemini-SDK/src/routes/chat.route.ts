@@ -162,7 +162,7 @@ export async function handleChatRequest(req: Request): Promise<Response> {
               
               // SSE格式需要发送结束标记
               if (isSSE) {
-                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.enqueue(encoder.encode('event: done\ndata: [DONE]\n\n'));
               }
             } catch (error) {
               console.error("AI流式响应处理过程中发生错误:", error);
